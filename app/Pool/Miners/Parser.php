@@ -179,6 +179,9 @@ class Parser extends BaseParser
 			if ($parts[0] === '-1.')
 				return;
 
+			if (!preg_match('/^C?[0-9]+\.$/siu', $parts[0]))
+				return;
+
 			if ($last_miner && $parts[0][0] === 'C') {
 				$parts[1] = $last_miner[1]; // replace miner's address from last active miner entry
 				$parts[2] = $last_miner[2]; // replace miner's state from last active miner entry
