@@ -85,7 +85,13 @@
 					json: json,
 					x: 'x',
 					xFormat: typeof xformat == 'undefined' ? '%Y-%m-%d %H:%M' : xformat,
-					type: typeof chart_type == 'undefined' ? 'line' : 'bar'
+					type: typeof chart_type == 'undefined' ? 'area-spline' : 'bar'
+				},
+				point: {
+					show: false
+				},
+				color: {
+					pattern: ['#778899', '#FF00FF', '#48D1CC']
 				},
 				axis: {
 					x: {
