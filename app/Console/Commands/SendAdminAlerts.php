@@ -39,7 +39,7 @@ class SendAdminAlerts extends Command
 		}
 
 		// zero pool hashrate notification
-		$stats_parser = new StatisticsParser($this->reader->getStatistics());
+		$stats_parser = new StatisticsParser($this->reader->getLiveDataJson());
 
 		if (!$this->isNotificationCooldown('zero_hashrate') && ((float) $stats_parser->getPoolHashrate()) == 0) {
 			$this->sendNotification('zero_hashrate', 'Zero pool hashrate - pool down?', 'there is zero hashrate on our pool, either no one is mining at our pool or the pool crashed. Please check pool\'s status.');
@@ -51,7 +51,7 @@ class SendAdminAlerts extends Command
 		}
 
 		// abnormal pool daemon state notification
-		$state_parser = new StateParser($this->reader->getState());
+		$state_parser = new StateParser($this->reader->getLiveDataJson());
 
 		if (!$this->isNotificationCooldown('pool_state') && !$state_parser->isNormalPoolState()) {
 			$this->sendNotification('pool_state', 'Abnormal pool daemon state', 'pool daemon is currently in state "' . $state_parser->getPoolState() . '". Outside normal operation, some OpenXDAGPool services might not work correctly. Please check the pool daemon.');
@@ -64,7 +64,7 @@ class SendAdminAlerts extends Command
 		$reference = new ReferenceHashrate();
 
 		if ($reference->shouldBeUsed()) {
-			$miners_parser = new MinersParser($this->reader->getMiners());
+			$miners_parser = new MinersParser($this->reader->getFastDataJson());
 			$pool_miner = $miners_parser->getMiner($miner_address = Setting::get('reference_miner_address'));
 			$is_offline = !$pool_miner || $pool_miner->getStatus() !== 'active';
 

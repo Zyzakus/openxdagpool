@@ -16,7 +16,7 @@ This software allows you to easily open a Dagger (XDAG) pool with a nice, comfor
 - miner offline / miner back online e-mail alerts for registered users
 - administrator e-mail alerts: zero pool hashrate, abnormal pool daemon state and reference miner offline
 - ability to e-mail active or all pool registered users with important message
-- raw pool daemon `state` and `stats` export on URLs `/raw/state` and `/raw/stats`
+- pool status and diagnostic information exports on URLs `/status` (JSON) and `/status/human-readable` (text file) - updated every minute
 
 # Planned features
 - ability to approximate earnings based on hashrate
@@ -33,19 +33,16 @@ Please submit your pull requests with new features, improvements and / or bugfix
 good Laravel 5, webpack, mix, blade, sass, javascript and bulma experience is needed. All pull requests must have reasonable code quality and security.
 
 # Dependencies
-- pool version at least 0.2.0 (previous versions printed network hashrate as an average over one hour, it is now averaged over 4 hours)
+- pool version at least 0.2.1
 - nginx, php7+, mariadb or mysql, npm 8.x
 
 # How the pool website works
-The pool website periodically fetches exported data from the pool daemon. Pool daemon-side scripts are in a [separate repository](https://github.com/XDagger/openxdagpool-scripts).
+The pool website periodically fetches required data from the pool daemon-side script. These scripts are in a [separate repository](https://github.com/XDagger/openxdagpool-scripts).
 This data is stored locally and then processed.
-Data flow is one way only, from pool daemon (exports) to the pool website. Only exception is balance checking, which calls `/balance.php`
-on pool-daemon server, but this URL is configurable in `.env`. You can use any other balance checker that *contains* compatible output (`x.xxxxxxxxx` - the address in question balance with 9 decimal places) and
-can accept XDAG address in question as a GET / route parameter.
 
-Processed results are most often stored in a database. The pool re-reads imported text files whenever necessary.
+Processed results are most often stored in a database. The pool re-reads imported data files whenever necessary.
 
-This means the pool website is totally independent of the pool itself. Should the pool software side cron tasks stop, the pool website would just endlessly display the last exported information
+This means the pool website is totally independent of the pool itself. Should the pool daemon-side become unavailable, the pool website would just endlessly display the latest obtained information
 from the pool daemon.
 
 # Installation
@@ -66,10 +63,11 @@ Perform the following steps in order to get the website up and running:
 11. run `php artisan key:generate`
 12. run `php artisan migrate`
 13. run `npm install` and then `npm run production`
-14. install a letsencrypt certificate or other https certificate (optional)
-15. visit the web site, and register. First registered user is an administrator.
-16. visit the administration interface to set up your pool settings.
-17. payouts exports of large datasets require the mysql files privilege. Edit `/etc/mysql/mysql.conf.d/mysqld.cnf` and in the `[mysqld]` section, add `secure-file-priv=/var/www/openxdagpool/public/payouts/`. Then execute `GRANT FILE ON *.* TO openxdagpool@'%';` as mysql's `root` user. Restart the mysql daemon using `service mysql restart` as `root`.
-18. as the PHP FPM pool user, execute `crontab -e` and enter one cron line: `* * * * * php /var/www/openxdagpool/artisan schedule:run >> /dev/null 2>&1`
+14. run `php artisan data:live` and `php artisan data:fast`
+15. install a letsencrypt certificate or other https certificate (optional)
+16. visit the web site, and register. First registered user is an administrator.
+17. visit the administration interface to set up your pool settings.
+18. payouts exports of large datasets require the mysql files privilege. Edit `/etc/mysql/mysql.conf.d/mysqld.cnf` and in the `[mysqld]` section, add `secure-file-priv=/var/www/openxdagpool/public/payouts/`. Then execute `GRANT FILE ON *.* TO openxdagpool@'%';` as mysql's `root` user. Restart the mysql daemon using `service mysql restart` as `root`.
+19. as the PHP FPM pool user, execute `crontab -e` and enter one cron line: `* * * * * php /var/www/openxdagpool/artisan schedule:run >> /dev/null 2>&1`
 
 Done! Enjoy your new OpenXDAGPool instance! ;-)

@@ -24,8 +24,8 @@ class SavePoolStats extends Command
 
 	public function handle()
 	{
-		$stats = new StatisticsParser($this->reader->getStatistics());
-		$miners = new MinersParser($this->reader->getMiners());
+		$stats = new StatisticsParser($this->reader->getLiveDataJson());
+		$miners = new MinersParser($this->reader->getFastDataJson());
 
 		$stat = new Stat([
 			'pool_hashrate' => $stats->getPoolHashrate(),

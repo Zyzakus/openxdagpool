@@ -4,17 +4,17 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 
-use App\Pool\DataReader;
-use App\Pool\Blocks\{Parser as BlocksParser, Block as PoolBlock};
+use App\Pool\{DataReader, Core};
+use App\Pool\Config\{Parser as ConfigParser, Presenter as ConfigPresenter};
 use App\FoundBlocks\FoundBlock;
-use App\Support\{ExclusiveLock, UnableToObtainLockException};
+use App\Payouts\Payout;
 
 use Carbon\Carbon;
 
 class ImportFoundBlocks extends Command
 {
 	protected $signature = 'blocks:import';
-	protected $description = 'Imports all new pool found blocks.';
+	protected $description = 'Imports / handles all found blocks and payouts.';
 
 	protected $reader;
 
@@ -26,62 +26,82 @@ class ImportFoundBlocks extends Command
 
 	public function handle()
 	{
-		$lock = new ExclusiveLock('blocks', 100);
+		$core = new Core;
+		$config = new ConfigPresenter(new ConfigParser($this->reader->getLiveDataJson()));
 
-		try {
-			$lock->obtain();
-		} catch (UnableToObtainLockException $ex) {
-			$this->line('Unable to obtain blocks lock, exiting.');
-			return;
-		}
+		// TODO: block reward may decrease in the future
+		$fee = 1024 * ($config->getFee() / 100);
 
-		$blocks_parser = new BlocksParser($this->reader->getBlocks());
+		$imported = $invalidated = 0;
 
-		$latest = FoundBlock::orderBy('id', 'desc')->first();
-		$latest_fully_imported_at = $latest ? $latest->precise_found_at : null;
-		$last_found_at = null;
-		$insert = [];
-		$inserted = 0;
+		// import at most 200 new found blocks / run
+		for ($i = 0; $i < 200; $i++) {
+			$block_json = $core->call('block');
+			$block_json = @json_decode($block_json, true);
 
-		$blocks_parser->forEachBlockLine(function(PoolBlock $pool_block) use ($latest_fully_imported_at, &$last_found_at, &$insert, &$inserted) {
-			$found_at = $pool_block->getFoundAt();
-
-			if ($latest_fully_imported_at && $found_at <= $latest_fully_imported_at)
-				return;
-
-			if ($last_found_at && $last_found_at == $found_at)
-				return; // do not import the same block twice
-
-			$insert[] = [
-				'found_at' => $found_at->format('Y-m-d H:i:s'),
-				'found_at_milliseconds' => floor($found_at->micro / 1000),
-				'tag' => $pool_block->getTag(),
-				'hash' => $pool_block->getHash(),
-				't' => $pool_block->getT(),
-				'res' => $pool_block->getRes(),
-				'payout' => $pool_block->getPayout(),
-				'fee' => $pool_block->getFee(),
-				'created_at' => $now = Carbon::now()->format('Y-m-d H:i:s'),
-				'updated_at' => $now,
-			];
-
-			$last_found_at = $found_at;
-
-			$inserted++;
-
-			if ($inserted % 1000 == 0) {
-				FoundBlock::insert($insert);
-				$this->line("Imported: $inserted");
-				$insert = [];
+			if ($block_json === false || $block_json === null) {
+				$this->line('Stopped importing blocks - unable to parse response json.');
+				break;
 			}
-		});
 
-		if ($insert) {
-			FoundBlock::insert($insert);
-			$this->line("Imported: $inserted");
+			if (isset($block_json['result']))
+				break;
+
+			$block = FoundBlock::where('hash', $block_json['properties']['hash'])->first();
+			if (!$block) {
+				$block = new FoundBlock([
+					'address' => $block_json['properties']['balance_address'],
+					'hash' => $block_json['properties']['hash'],
+					'payout' => round(1024 - $fee, 2),
+					'fee' => round($fee, 2),
+				]);
+			} else {
+				$block->payouts()->delete();
+			}
+
+			$block->precise_found_at = Carbon::parse($block_json['properties']['time']);
+			$block->save();
+
+			// insert payouts
+			foreach ($block_json['payouts'] as $payout) {
+				$new_payout = new Payout([
+					'found_block_id' => $block->id,
+					'recipient' => $payout['address'],
+					'amount' => $payout['amount'],
+				]);
+
+				$new_payout->precise_made_at = Carbon::parse($payout['time']);
+				$new_payout->save();
+			}
+
+			$imported++;
 		}
 
+		// invalidate at most 200 found blocks / run
+		for ($i = 0; $i < 200; $i++) {
+			$block_json = $core->call('blockInvalidated');
+			$block_json = @json_decode($block_json, true);
+
+			if ($block_json === false) {
+				$this->line('Stopped invalidating found blocks - unable to parse response json.');
+				break;
+			}
+
+			if (isset($block_json['result']))
+				break;
+
+			$block = FoundBlock::where('hash', $block_json['invalidateBlock'])->first();
+			if (!$block)
+				continue;
+
+			$block->payouts()->delete();
+			$block->delete();
+
+			$invalidated++;
+		}
+
+		$this->line('Imported ' . $imported . ' found blocks.');
+		$this->line('Ivalidated ' . $invalidated . ' already imported found blocks.');
 		$this->info('ImportFoundBlocks completed successfully.');
-		$lock->release();
 	}
 }

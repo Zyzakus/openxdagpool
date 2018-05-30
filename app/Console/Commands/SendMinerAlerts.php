@@ -27,7 +27,7 @@ class SendMinerAlerts extends Command
 
 	public function handle()
 	{
-		$stats_parser = new StatisticsParser($this->reader->getStatistics());
+		$stats_parser = new StatisticsParser($this->reader->getLiveDataJson());
 		$pool_hashrate = (float) $stats_parser->getPoolHashrate();
 
 		if ($pool_hashrate == 0) {

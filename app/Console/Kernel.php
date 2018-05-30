@@ -13,9 +13,10 @@ class Kernel extends ConsoleKernel
 	 * @var array
 	 */
 	protected $commands = [
-		Commands\DownloadPoolData::class,
+		Commands\DownloadLiveData::class,
+		Commands\DownloadFastData::class,
+		Commands\CreateDataSnapshot::class,
 		Commands\PoolCron::class,
-		Commands\ImportPayouts::class,
 		Commands\ImportFoundBlocks::class,
 		Commands\SaveMinerStats::class,
 		Commands\SavePoolStats::class,
@@ -32,8 +33,8 @@ class Kernel extends ConsoleKernel
 	 */
 	protected function schedule(Schedule $schedule)
 	{
-		$schedule->command('payouts:import')->cron('45 */3 * * *')->withoutOverlapping();
-		$schedule->command('blocks:import')->cron('45 */3 * * *')->withoutOverlapping();
+		$schedule->command('data:live')->everyMinute()->withoutOverlapping();
+		$schedule->command('data:fast')->everyFiveMinutes()->withoutOverlapping();
 		$schedule->command('pool:cron')->everyFiveMinutes()->withoutOverlapping();
 	}
 

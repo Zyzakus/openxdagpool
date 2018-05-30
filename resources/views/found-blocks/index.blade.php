@@ -31,7 +31,7 @@
 
 				<div class="card-content">
 					<div class="content">
-						<p><span class="important">Note:</span> This list updates every 4 hours. Times are listed in UTC. Blocks are paid out immediately after they are found.</p>
+						<p><span class="important">Note:</span> This list updates approximately every 5 minutes. Times are listed in UTC. Blocks are paid out immediately when they are ready.</p>
 
 						<table class="table is-fullwidth">
 							<thead>

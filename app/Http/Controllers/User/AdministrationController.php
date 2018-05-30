@@ -76,11 +76,6 @@ class AdministrationController extends Controller
 
 	public function savePoolSettings(SaveSettings $request)
 	{
-		Setting::set('fees_percent', $request->input('fees_percent'));
-		Setting::set('reward_percent', $request->input('reward_percent'));
-		Setting::set('direct_percent', $request->input('direct_percent'));
-		Setting::set('fund_percent', $request->input('fund_percent'));
-
 		Setting::set('pool_created_at', $request->input('pool_created_at'));
 		Setting::set('other_pools', $request->input('other_pools'));
 		Setting::set('pool_name', $request->input('pool_name'));
@@ -129,8 +124,8 @@ class AdministrationController extends Controller
 
 	public function minersByIp(Request $request, DataReader $reader, Formatter $format)
 	{
-		$miners_parser = new MinersParser($reader->getMiners());
-		$stats_parser = new StatsParser($reader->getStatistics());
+		$miners_parser = new MinersParser($reader->getFastDataJson());
+		$stats_parser = new StatsParser($reader->getLiveDataJson());
 		$ips = new Collection($miners_parser->getMinersByIp());
 		$page = $request->input('page', 1);
 		$ips = new LengthAwarePaginator($ips->forPage($page, 20), count($ips), 20, $page, ['path' => route('user.admin.miners-by-ip')]);
@@ -146,8 +141,8 @@ class AdministrationController extends Controller
 
 	public function minersByHashrate(Request $request, DataReader $reader, Formatter $format)
 	{
-		$miners_parser = new MinersParser($reader->getMiners());
-		$stats_parser = new StatsParser($reader->getStatistics());
+		$miners_parser = new MinersParser($reader->getFastDataJson());
+		$stats_parser = new StatsParser($reader->getLiveDataJson());
 		$miners = new Collection($miners_parser->getMinersByHashrate($stats_parser->getPoolHashrate()));
 		$page = $request->input('page', 1);
 		$miners = new LengthAwarePaginator($miners->forPage($page, 20), count($miners), 20, $page, ['path' => route('user.admin.miners-by-hashrate')]);
@@ -159,16 +154,15 @@ class AdministrationController extends Controller
 		]);
 	}
 
-	public function poolState(DataReader $reader)
+	public function poolInformation(DataReader $reader)
 	{
-		$state_parser = new StateParser($reader->getState());
+		$state_parser = new StateParser($reader->getLiveDataJson());
 
-		return view('user.admin.pool-state', [
-			'section' => 'pool-state',
-			'state' => $state_parser->getPoolState(),
+		return view('user.admin.pool-information', [
+			'section' => 'pool-information',
 			'state_normal' => $state_parser->isNormalPoolState(),
-			'stats' => stream_get_contents($reader->getStatistics()),
-			'miners' => stream_get_contents($reader->getMiners()),
+			'livedata' => $reader->getLiveDataHumanReadable(),
+			'fastdata' => $reader->getFastDataHumanReadable(),
 		]);
 	}
 }

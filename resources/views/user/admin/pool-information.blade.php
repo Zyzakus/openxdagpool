@@ -9,10 +9,10 @@
 		<div class="hero-body">
 			<div class="container">
 				<h1 class="title">
-					Pool state
+					Pool information
 				</h1>
 				<h2 class="subtitle">
-					View pool daemon state other various information
+					View pool version, state, stats, miners and various other information
 				</h2>
 			</div>
 		</div>
@@ -23,26 +23,22 @@
 	<nav class="card">
 		<header class="card-header">
 			<p class="card-header-title">
-				Pool state, version, statistics and miners
+				Pool version, state, stats, config, connections and miners
 			</p>
 		</header>
 
 		<div class="card-content">
 			<p>
 				@if (!$state_normal)
-					Pool state <strong>(abnormal)</strong>:
+					Pool information and state <strong>(abnormal)</strong>:
 				@else
-					Pool state:
+					Pool information and state:
 				@endif
-<pre>{{ $state }}</pre>
-			</p>
-			<p>
-				Stats: <br>
-<pre>{{ $stats }}</pre>
+<pre>{{ $livedata }}</pre>
 			</p>
 			<p>
 				Miners: <br>
-<pre>{{ $miners }}</pre>
+<pre>{{ $fastdata }}</pre>
 			</p>
 		</div>
 	</nav>

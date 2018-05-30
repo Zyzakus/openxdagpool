@@ -9,11 +9,12 @@
 /vendor
 /.idea
 /.vagrant
-/storage/miners.txt
-/storage/stats.txt
-/storage/payouts.txt
-/storage/state.txt
-/storage/blocks.txt
+/storage/livedata.json
+/storage/livedata.txt
+/storage/work_livedata.json
+/storage/fastdata.json
+/storage/fastdata.txt
+/storage/work_fastdata.json
 /storage/pooldata
 /storage/settings.json
 Homestead.json

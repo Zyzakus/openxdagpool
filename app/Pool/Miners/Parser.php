@@ -6,23 +6,23 @@ use App\Pool\BaseParser;
 
 class Parser extends BaseParser
 {
+	public function __construct(array $data)
+	{
+		parent::__construct($data);
+		$this->data = $this->data['miners'] ?? [];
+	}
+
 	public function getNumberOfMiners()
 	{
-		$count = 0;
-
-		$this->forEachMinerLine(function($parts) use (&$count) {
-			$count++;
-		});
-
-		return $count;
+		return count($this->data);
 	}
 
 	public function getNumberOfActiveMiners()
 	{
 		$active = 0;
 
-		$this->forEachMinerLine(function($parts) use (&$active) {
-			if ($parts[2] === 'active')
+		$this->forEachMiner(function($miner) use (&$active) {
+			if ($miner['status'] === 'active')
 				$active++;
 		});
 
@@ -33,9 +33,9 @@ class Parser extends BaseParser
 	{
 		$total = 0;
 
-		$this->forEachMinerLine(function($parts) use (&$total) {
-			//if ($parts[2] === 'active')
-				$total += $parts[5];
+		$this->forEachMiner(function($miner) use (&$total) {
+			// count all shares, not just for active miners
+			$total += $miner['unpaid_shares'];
 		});
 
 		return $total;
@@ -45,17 +45,17 @@ class Parser extends BaseParser
 	{
 		$miner = null;
 
-		$this->forEachMinerLine(function($parts) use ($address, &$miner) {
-			if ($parts[1] === $address) {
+		$this->forEachMiner(function($m) use ($address, &$miner) {
+			if ($m['address'] === $address) {
 				if (!$miner) {
-					$miner = new Miner($parts[1], $parts[2], $parts[3], $parts[4], $parts[5]);
+					$miner = Miner::fromArray($m);
 				} else {
-					$miner->addIpAndPort($parts[3]);
-					$miner->addInOutBytes($parts[4]);
-					$miner->addUnpaidShares($parts[5]);
+					$miner->addIpAndPort($m['ip_and_port']);
+					$miner->addInOutBytes(implode('/', $m['in_out_bytes']));
+					$miner->addUnpaidShares($m['unpaid_shares']);
 
-					if ($miner->getStatus() !== 'active' && $parts[2] === 'active')
-						$miner->setStatus($parts[2]);
+					if ($miner->getStatus() !== 'active' && $m['status'] === 'active')
+						$miner->setStatus($m['status']);
 				}
 			}
 		});
@@ -67,19 +67,19 @@ class Parser extends BaseParser
 	{
 		$miners = [];
 
-		$this->forEachMinerLine(function($parts) use (&$miners) {
-			if ($parts[1] == 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+		$this->forEachMiner(function($miner) use (&$miners) {
+			if ($miner['address'] == 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
 				return;
 
-			if (!isset($miners[$parts[1]])) {
-				$miners[$parts[1]] = new Miner($parts[1], $parts[2], $parts[3], $parts[4], $parts[5]);
+			if (!isset($miners[$miner['address']])) {
+				$miners[$miner['address']] = Miner::fromArray($miner);
 			} else {
-				$miners[$parts[1]]->addIpAndPort($parts[3]);
-				$miners[$parts[1]]->addInOutBytes($parts[4]);
-				$miners[$parts[1]]->addUnpaidShares($parts[5]);
+				$miners[$miner['address']]->addIpAndPort($miner['ip_and_port']);
+				$miners[$miner['address']]->addInOutBytes(implode('/', $miner['in_out_bytes']));
+				$miners[$miner['address']]->addUnpaidShares($miner['unpaid_shares']);
 
-				if ($miners[$parts[1]]->getStatus() !== 'active' && $parts[2] === 'active')
-					$miners[$parts[1]]->setStatus($parts[2]);
+				if ($miners[$miner['address']]->getStatus() !== 'active' && $miner['status'] === 'active')
+					$miners[$miner['address']]->setStatus($miner['status']);
 			}
 		});
 
@@ -110,11 +110,11 @@ class Parser extends BaseParser
 	{
 		$miners = [];
 
-		$this->forEachMinerLine(function($parts) use (&$miners) {
-			if ($parts[1] == 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+		$this->forEachMiner(function($miner) use (&$miners) {
+			if ($miner['address'] == 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
 				return;
 
-			list($ip, $port) = explode(':', $parts[3]);
+			list($ip, $port) = explode(':', $miner['ip_and_port']);
 
 			if ($ip === '0.0.0.0' && $port === '0')
 				return;
@@ -122,15 +122,15 @@ class Parser extends BaseParser
 			if (!isset($miners[$ip]))
 				$miners[$ip] = [];
 
-			if (!isset($miners[$ip][$parts[1]])) {
-				$miners[$ip][$parts[1]] = new Miner($parts[1], $parts[2], $parts[3], $parts[4], $parts[5]);
+			if (!isset($miners[$ip][$miner['address']])) {
+				$miners[$ip][$miner['address']] = Miner::fromArray($miner);
 			} else {
-				$miners[$ip][$parts[1]]->addIpAndPort($parts[3]);
-				$miners[$ip][$parts[1]]->addInOutBytes($parts[4]);
-				$miners[$ip][$parts[1]]->addUnpaidShares($parts[5]);
+				$miners[$ip][$miner['address']]->addIpAndPort($miner['ip_and_port']);
+				$miners[$ip][$miner['address']]->addInOutBytes(implode('/', $miner['in_out_bytes']));
+				$miners[$ip][$miner['address']]->addUnpaidShares($miner['unpaid_shares']);
 
-				if ($miners[$ip][$parts[1]]->getStatus() !== 'active' && $parts[2] === 'active')
-					$miners[$ip][$parts[1]]->setStatus($parts[2]);
+				if ($miners[$ip][$miner['address']]->getStatus() !== 'active' && $miner['status'] === 'active')
+					$miners[$ip][$miner['address']]->setStatus($miner['status']);
 			}
 		});
 
@@ -165,43 +165,9 @@ class Parser extends BaseParser
 		return $miners;
 	}
 
-	// this function is backwards compatible with pool versions <= 0.2.1
-	protected function forEachMinerLine(callable $callback, $skip = 0)
+	protected function forEachMiner(callable $callback)
 	{
-		$last_miner = null;
-
-		$this->forEachLine(function($line) use ($callback, &$last_miner) {
-			$parts = preg_split('/\s+/siu', $line);
-
-			if (count($parts) !== 6)
-				return;
-
-			if ($parts[0] === '-1.')
-				return;
-
-			if (!preg_match('/^C?[0-9]+\.$/siu', $parts[0]))
-				return;
-
-			if ($last_miner && $parts[0][0] === 'C') {
-				$parts[1] = $last_miner[1]; // replace miner's address from last active miner entry
-				$parts[2] = $last_miner[2]; // replace miner's state from last active miner entry
-				$parts[5] = $last_miner[5]; // replace miner's unpaid shares with value from last active miner entry
-				$last_miner[5] = 0; // replace unpaid shares only for first connection, treat all other connections as zero unpaid shares (sum => vallue from last active miner entry)
-			} else {
-				$last_miner = $parts; // store currently processed miner entry
-			}
-
-			// in new miners output, IP and IN/OUT information is lost when miner disconnects. Replace with placeholder values.
-			if ($parts[2] !== 'active' && $parts[3] === '-') {
-				$parts[3] = '0.0.0.0:0';
-				$parts[4] = '0/0';
-			}
-
-			// in new miners output, skip the first "active" miner line, and use only "C" lines - miner's connections
-			// this check will succeed only for active miners in new output - we don't replace IP and IN/OUT bytes
-			// in the condition above for miners in 'active' state
-			if ($parts[3] !== '-')
-				$callback($parts);
-		}, $skip);
+		foreach ($this->data as $miner)
+			$callback($miner);
 	}
 }

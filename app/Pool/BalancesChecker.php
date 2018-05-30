@@ -2,33 +2,19 @@
 
 namespace App\Pool;
 
-use App\Support\{ExclusiveLock, UnableToObtainLockException};
-
 class BalancesChecker
 {
 	protected $balances = [];
 
 	public function getBalance($address)
 	{
-		if (isset($this->balances[$address]))
-			return $this->balances[$address];
+		$core = new Core;
+		$balance_json = $core->call('balance', ['address' => $address]);
+		$balance_json = @json_decode($balance_json, true);
 
-		if (trim(env('BALANCE_CHECKER_URL')) === '')
+		if ($balance_json === false)
 			return null;
 
-		$lock = new ExclusiveLock('balances', 300);
-
-		try {
-			$lock->obtain();
-			$result = @file_get_contents(sprintf(trim(env('BALANCE_CHECKER_URL')), urlencode($address)));
-			$lock->release();
-
-			if ($result && preg_match('/\d+\.\d{9}/siu', $result, $match))
-				return $this->balances[$address] = $match[0];
-		} catch (UnableToObtainLockException $ex) {
-			return null;
-		}
-
-		return null;
+		return $balance_json['balance'];
 	}
 }

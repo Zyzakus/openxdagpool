@@ -83,7 +83,8 @@ class User extends Authenticatable
 		$in_clause = array_fill(0, count($addresses), '?');
 
 		return \DB::statement('SELECT "_Date and time" made_at, "Sender" sender, "Recipient" recipient, "Amount" amount
-			UNION ALL SELECT CONCAT(made_at, ".", LPAD(made_at_milliseconds, 3, "0")) made_at, sender, recipient, amount FROM payouts WHERE recipient IN (' . implode(', ', $in_clause) . ')
+			UNION ALL SELECT CONCAT(p.made_at, ".", LPAD(p.made_at_milliseconds, 3, "0")) made_at, b.address sender, p.recipient, p.amount FROM payouts p
+			LEFT JOIN found_blocks b ON p.found_block_id = b.id WHERE p.recipient IN (' . implode(', ', $in_clause) . ')
 			ORDER BY made_at ASC
 			INTO OUTFILE ' . \DB::getPdo()->quote($filename) . ' FIELDS TERMINATED BY "," ENCLOSED BY \'"\' LINES TERMINATED BY "\n"', $addresses->toArray());
 	}

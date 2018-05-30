@@ -4,7 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 
-use App\Pool\{DataReader, Config, Uptime, Formatter};
+use App\Pool\{DataReader, Uptime, Formatter};
+use App\Pool\Config\{Parser as ConfigParser, Presenter as ConfigPresenter};
 use App\Pool\Statistics\{Parser as StatisticsParser, Presenter as StatisticsPresenter, Stat as PoolStat};
 use App\Pool\State\Parser as StateParser;
 
@@ -17,19 +18,19 @@ use Auth;
 
 class StatsController extends Controller
 {
-	protected $reader, $config, $uptime, $format;
+	protected $reader, $uptime, $format;
 
-	public function __construct(DataReader $reader, Config $config, Uptime $uptime, Formatter $format)
+	public function __construct(DataReader $reader, Uptime $uptime, Formatter $format)
 	{
 		$this->reader = $reader;
-		$this->config = $config;
 		$this->uptime = $uptime;
 		$this->format = $format;
 	}
 
 	public function index(Leaderboard $leaderboard)
 	{
-		$stats_presenter = new StatisticsPresenter($stats_parser = new StatisticsParser($this->reader->getStatistics()));
+		$stats_presenter = new StatisticsPresenter($stats_parser = new StatisticsParser($this->reader->getLiveDataJson()));
+		$config_presenter = new ConfigPresenter($config_parser = new ConfigParser($this->reader->getLiveDataJson()));
 		$pool_hashrate = (float) $stats_parser->getPoolHashrate();
 		$user_stats = [];
 
@@ -55,7 +56,7 @@ class StatsController extends Controller
 
 			// append extra statistics for admin users
 			if ($user->isAdministrator()) {
-				$state_parser = new StateParser($this->reader->getState());
+				$state_parser = new StateParser($this->reader->getLiveDataJson());
 				$user_stats['is_administrator'] = true;
 				$user_stats['pool_version'] = $state_parser->getPoolVersion();
 				$user_stats['pool_state'] = $state_parser->getPoolState();
@@ -104,8 +105,8 @@ class StatsController extends Controller
 
 			'miners' => number_format($pool_stat ? $pool_stat->active_miners : 0, 0, '.', ','),
 
-			'fees' => $this->config->getFees(),
-			'config' => $this->config->getConfig(),
+			'fees' => $config_presenter->getFee(),
+			'config' => $config_presenter->getFeeConfig(),
 
 			'uptime' => $this->uptime->getReadableUptime(),
 			'uptime_exact' => $this->uptime->getExactUptime(),

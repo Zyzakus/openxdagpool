@@ -6,11 +6,11 @@ use App\Pool\BaseParser;
 
 class Parser extends BaseParser
 {
-	protected $lines, $pool_version = 'unknown', $pool_state = 'unknown';
+	protected $pool_version = 'unknown', $pool_state = 'unknown';
 
-	public function __construct($handle)
+	public function __construct(array $data)
 	{
-		parent::__construct($handle);
+		parent::__construct($data);
 		$this->read();
 	}
 
@@ -31,15 +31,7 @@ class Parser extends BaseParser
 
 	protected function read()
 	{
-		$line_number = 0;
-		$this->forEachLine(function($line) use (&$line_number) {
-			if ($line_number == 0)
-				$this->pool_version = $line;
-
-			if ($line_number == 1)
-				$this->pool_state = $line;
-
-			$line_number++;
-		});
+		$this->pool_version = $this->data['version'];
+		$this->pool_state = $this->data['state'];
 	}
 }

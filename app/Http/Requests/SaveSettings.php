@@ -23,14 +23,7 @@ class SaveSettings extends FormRequest
 	 */
 	public function rules()
 	{
-		$total_percent = $this->input('fees_percent') + $this->input('reward_percent') + $this->input('direct_percent') + $this->input('fund_percent');
-
 		return [
-			'fees_percent' => 'required|numeric|min:0|max:100' . ($total_percent > 100 ? '|not_in:' . ((float) $this->input('fees_percent')) : ''),
-			'reward_percent' => 'required|numeric|min:0|max:100',
-			'direct_percent' => 'required|numeric|min:0|max:100',
-			'fund_percent' => 'required|numeric|min:0|max:100',
-
 			'pool_created_at' => 'required|date',
 			'pool_name' => 'required',
 			'header_background_color' => 'required|regex:/^#[a-f0-9]{6}$/siu',

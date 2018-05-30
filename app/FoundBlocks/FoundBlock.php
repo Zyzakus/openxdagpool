@@ -5,10 +5,18 @@ namespace App\FoundBlocks;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 
+use App\Payouts\Payout;
+
 class FoundBlock extends Model
 {
-	protected $fillable = ['found_at', 'found_at_milliseconds', 'tag', 'hash', 't', 'res', 'payout', 'fee'];
+	protected $fillable = ['address', 'found_at', 'found_at_milliseconds', 'hash', 'payout', 'fee'];
 	protected $dates = ['created_at', 'updated_at', 'found_at'];
+
+	/* relations */
+	public function payouts()
+	{
+		return $this->hasMany(Payout::class);
+	}
 
 	/* attributes */
 	public function getPreciseFoundAtAttribute()

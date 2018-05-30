@@ -21,6 +21,11 @@ class Miner
 		$this->hashrate = $hashrate;
 	}
 
+	public static function fromArray(array $miner)
+	{
+		return new self($miner['address'] ?? '', $miner['status'] ?? 'free', $miner['ip_and_port'] ?? '0.0.0.0:0', isset($miner['in_out_bytes']) ? implode('/', $miner['in_out_bytes']) : '0/0', $miner['unpaid_shares'] ?? 0);
+	}
+
 	public function getAddress()
 	{
 		return $this->address;

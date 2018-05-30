@@ -11,13 +11,15 @@ class PoolCron extends Command
 
 	public function handle()
 	{
-		sleep(40);
-		$this->call('pool:download-data');
+		if (!env('APP_DEBUG'))
+			sleep(40);
+		$this->call('data:snapshot');
 		$this->call('stats:pool');
 		$this->call('stats:miners');
 		$this->call('alerts:miners');
 		$this->call('alerts:pool');
 		$this->call('miners:remove-inactive-history');
+		$this->call('blocks:import');
 		$this->info('PoolCron completed successfully.');
 	}
 }

@@ -32,7 +32,7 @@ class SaveMinerStats extends Command
 		if (!$stat)
 			return;
 
-		$miners_parser = new MinersParser($this->reader->getMiners());
+		$miners_parser = new MinersParser($this->reader->getFastDataJson());
 		$reference = new ReferenceHashrate();
 		$reference->compute($miners_parser, $stat);
 
@@ -40,7 +40,7 @@ class SaveMinerStats extends Command
 		foreach (Miner::all() as $miner) {
 			$balance = $miner->balance;
 
-			if (!$miner->balance_updated_at || $miner->balance_updated_at <= Carbon::now()->subMinutes(30)) {
+			if (!$miner->balance_updated_at || $miner->balance_updated_at <= Carbon::now()->subMinutes(5)) {
 				$balance = $this->balances->getBalance($miner->address);
 
 				if ($balance === null)

@@ -4,38 +4,34 @@ namespace App\Pool;
 
 class DataReader
 {
-	public function getState()
+	public function getLiveDataJson()
 	{
-		return @fopen($this->getPath('STATE'), 'r');
+		return $this->json(@file_get_contents(storage_path('work_livedata.json')));
 	}
 
-	public function getStatistics()
+	public function getFastDataJson()
 	{
-		return @fopen($this->getPath('STATS'), 'r');
+		return $this->json(@file_get_contents(storage_path('work_fastdata.json')));
 	}
 
-	public function getBlocks()
+	public function getLiveDataHumanReadable()
 	{
-		return @fopen($this->getPath('BLOCKS'), 'r');
+		return @file_get_contents(storage_path('livedata.txt'));
 	}
 
-	public function getMiners()
+	public function getFastDataHumanReadable()
 	{
-		return @fopen($this->getPath('MINERS'), 'r');
+		return @file_get_contents(storage_path('fastdata.txt'));
 	}
 
-	public function getPayouts()
+	protected function json($data)
 	{
-		return @fopen($this->getPath('PAYOUTS'), 'r');
-	}
+		$data = @json_decode($data, true);
+		if ($data === false)
+			throw new DataReaderException('Invalid json.');
 
-	protected function getPath($env_name)
-	{
-		$path = env($env_name);
-
-		if (substr($path, 0, 2) === './')
-			return base_path($path);
-
-		return $path;
+		return $data;
 	}
 }
+
+class DataReaderException extends \Exception {}
