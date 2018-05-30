@@ -34,8 +34,8 @@ class ImportFoundBlocks extends Command
 
 		$imported = $invalidated = 0;
 
-		// import at most 200 new found blocks / run
-		for ($i = 0; $i < 200; $i++) {
+		// import at most 20000 new found blocks / run
+		for ($i = 0; $i < 20000; $i++) {
 			$block_json = $core->call('block');
 			$block_json = @json_decode($block_json, true);
 
@@ -77,8 +77,8 @@ class ImportFoundBlocks extends Command
 			$imported++;
 		}
 
-		// invalidate at most 200 found blocks / run
-		for ($i = 0; $i < 200; $i++) {
+		// invalidate at most 20000 found blocks / run
+		for ($i = 0; $i < 20000; $i++) {
 			$block_json = $core->call('blockInvalidated');
 			$block_json = @json_decode($block_json, true);
 
