@@ -12,7 +12,7 @@ class DownloadFastData extends DownloadLiveData
 
 	protected function downloadFiles()
 	{
-		$this->downloadFile('fastdata', [], 'fastdata.json');
+		$this->downloadFile('fastdata', [], 'fastdata.json', true);
 		$this->downloadFile('fastdata', ['human_readable' => true], 'fastdata.txt');
 	}
 }

@@ -12,7 +12,7 @@ class BalancesChecker
 		$balance_json = $core->call('balance', ['address' => $address]);
 		$balance_json = @json_decode($balance_json, true);
 
-		if ($balance_json === false)
+		if (!$balance_json)
 			return null;
 
 		return $balance_json['balance'];
